@@ -15,6 +15,7 @@ const flagDefaults: {
   enableResend: boolean;
   enableGpt5: boolean;
   useAnthropicFraction: number;
+  enableAgentTeam: boolean;
 } = {
   maintenanceMode: false,
   showUsageAnnotations: false,
@@ -29,6 +30,7 @@ const flagDefaults: {
   enableResend: false,
   enableGpt5: false,
   useAnthropicFraction: 1.0,
+  enableAgentTeam: false,
 };
 
 function kebabCaseKeys(object: typeof flagDefaults) {

@@ -144,6 +144,7 @@ export const Chat = memo(
       useGeminiAuto,
       enableResend,
       useAnthropicFraction,
+      enableAgentTeam,
     } = useLaunchDarkly();
 
     const title = useStore(description);
@@ -371,6 +372,7 @@ export const Chat = memo(
           promptCharacterCounts: characterCounts,
           featureFlags: {
             enableResend,
+            enableAgentTeam,
           },
         };
       },

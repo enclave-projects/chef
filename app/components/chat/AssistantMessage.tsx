@@ -8,6 +8,7 @@ import { parseAnnotations, type ProviderType, type Usage, type UsageAnnotation }
 import { useLaunchDarkly } from '~/lib/hooks/useLaunchDarkly';
 import { calculateChefTokens, usageFromGeneration, type ChefTokenBreakdown } from '~/lib/common/usage';
 import { captureMessage } from '@sentry/remix';
+import { TeamActivity } from './TeamActivity';
 
 interface AssistantMessageProps {
   message: Message;
@@ -27,6 +28,8 @@ export const AssistantMessage = memo(function AssistantMessage({ message }: Assi
   return (
     <div className="w-full overflow-hidden text-sm">
       <div className="flex flex-col gap-2">
+        {parsedAnnotations.team && <TeamActivity feedback={parsedAnnotations.team} />}
+
         {message.parts.map((part, index) => (
           <AssistantMessagePart
             key={index}

@@ -36,6 +36,7 @@ import { lookupDocsTool } from 'chef-agent/tools/lookupDocs';
 import { addEnvironmentVariablesTool } from 'chef-agent/tools/addEnvironmentVariables';
 import { getConvexDeploymentNameTool } from 'chef-agent/tools/getConvexDeploymentName';
 import type { PromptCharacterCounts } from 'chef-agent/ChatContextManager';
+import { buildTeamCoordinator, encodeTeamFeedback, type AgentTeamOptions } from '~/lib/.server/llm/agent-team';
 
 type Messages = Message[];
 
@@ -58,6 +59,8 @@ export async function convexAgent(args: {
   featureFlags: {
     enableResend: boolean;
   };
+  /** When enabled, runs the request through the Agent Orchestrator team. */
+  agentTeam?: AgentTeamOptions;
 }) {
   const {
     chatInitialId,
@@ -73,6 +76,7 @@ export async function convexAgent(args: {
     collapsedMessages,
     promptCharacterCounts,
     featureFlags,
+    agentTeam,
   } = args;
   console.debug('Starting agent with model provider', modelProvider);
   if (userApiKey) {
@@ -114,6 +118,25 @@ export async function convexAgent(args: {
     ...cleanupAssistantMessages(messages),
   ];
 
+  // Agent Orchestrator (team mode): rebuild the deterministic team state from
+  // the transcript and inject the active agent's persona + shared context. This
+  // is opt-in and additive — when disabled the single-agent path is unchanged.
+  let teamCoordinator: ReturnType<typeof buildTeamCoordinator> = null;
+  if (agentTeam?.enabled) {
+    try {
+      teamCoordinator = buildTeamCoordinator(messages, agentTeam);
+      if (teamCoordinator) {
+        const teamSystemPrompt = teamCoordinator.buildTurnSystemPrompt();
+        // Insert after the two cached base system prompts, before the conversation.
+        messagesForDataStream.splice(2, 0, { role: 'system' as const, content: teamSystemPrompt });
+        console.debug('Agent team active:', teamCoordinator.toState().activeRole);
+      }
+    } catch (error) {
+      console.error('Failed to initialize agent team; falling back to single agent', error);
+      teamCoordinator = null;
+    }
+  }
+
   if (modelProvider === 'Bedrock') {
     messagesForDataStream[messagesForDataStream.length - 1].providerOptions = {
       bedrock: {
@@ -144,6 +167,15 @@ export async function convexAgent(args: {
         tools,
         toolChoice: shouldDisableTools ? 'none' : 'auto',
         onFinish: (result) => {
+          if (teamCoordinator) {
+            try {
+              teamCoordinator.ingestTurnOutput(result.text ?? '');
+              const feedback = teamCoordinator.feedback();
+              dataStream.writeMessageAnnotation(encodeTeamFeedback(feedback));
+            } catch (error) {
+              console.error('Failed to emit agent team feedback', error);
+            }
+          }
           onFinishHandler({
             dataStream,
             messages,
