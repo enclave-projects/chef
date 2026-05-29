@@ -1,5 +1,6 @@
 import type { Message } from 'ai';
 import { z } from 'zod';
+import type { TeamFeedback } from 'chef-agent/team/types';
 
 // This is added as a message annotation by the server when the agent has
 // stopped due to repeated errors.
@@ -80,6 +81,13 @@ export const annotationValidator = z.discriminatedUnion('type', [
     provider: providerValidator,
     model: z.optional(z.string()),
   }),
+  z.object({
+    // Emitted by the server when Agent Team mode is active. Carries a
+    // JSON-encoded `TeamFeedback` snapshot for the UI. Kept as an opaque
+    // string so this validator stays decoupled from the team types.
+    type: z.literal('team'),
+    payload: z.string(),
+  }),
 ]);
 
 export const failedDueToRepeatedErrors = (annotations: Message['annotations']) => {
@@ -98,17 +106,20 @@ export const parseAnnotations = (
   failedDueToRepeatedErrors: boolean;
   usageForToolCall: Record<string, UsageAnnotation | null>;
   modelForToolCall: Record<string, { provider: ProviderType; model: string | undefined }>;
+  team: TeamFeedback | null;
 } => {
   if (!annotations) {
     return {
       failedDueToRepeatedErrors: false,
       usageForToolCall: {},
       modelForToolCall: {},
+      team: null,
     };
   }
   let failedDueToRepeatedErrors = false;
   const usageForToolCall: Record<string, UsageAnnotation | null> = {};
   const modelForToolCall: Record<string, { provider: ProviderType; model: string | undefined }> = {};
+  let team: TeamFeedback | null = null;
   for (const annotation of annotations) {
     const parsed = annotationValidator.safeParse(annotation);
     if (!parsed.success) {
@@ -128,10 +139,26 @@ export const parseAnnotations = (
     if (parsed.data.type === 'model') {
       modelForToolCall[parsed.data.toolCallId] = { provider: parsed.data.provider, model: parsed.data.model };
     }
+    if (parsed.data.type === 'team') {
+      const teamFeedback = parseTeamFeedback(parsed.data.payload);
+      // Keep the most recent team snapshot.
+      if (teamFeedback) {
+        team = teamFeedback;
+      }
+    }
   }
   return {
     failedDueToRepeatedErrors,
     usageForToolCall,
     modelForToolCall,
+    team,
   };
 };
+
+function parseTeamFeedback(payload: string): TeamFeedback | null {
+  try {
+    return JSON.parse(payload) as TeamFeedback;
+  } catch {
+    return null;
+  }
+}

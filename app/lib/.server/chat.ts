@@ -70,6 +70,7 @@ export async function chatAction({ request }: ActionFunctionArgs) {
     promptCharacterCounts?: PromptCharacterCounts;
     featureFlags: {
       enableResend?: boolean;
+      enableAgentTeam?: boolean;
     };
   };
   const { messages, firstUserMessage, chatInitialId, deploymentName, token, teamSlug, recordRawPromptsForDebugging } =
@@ -192,6 +193,9 @@ export async function chatAction({ request }: ActionFunctionArgs) {
       promptCharacterCounts: body.promptCharacterCounts,
       featureFlags: {
         enableResend: body.featureFlags.enableResend ?? false,
+      },
+      agentTeam: {
+        enabled: body.featureFlags.enableAgentTeam ?? false,
       },
     });
 
