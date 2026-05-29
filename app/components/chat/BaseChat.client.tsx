@@ -56,6 +56,10 @@ interface BaseChatProps {
   modelSelection: ModelSelection;
   setModelSelection: (modelSelection: ModelSelection) => void;
 
+  // Agent Orchestrator team-mode toggle
+  agentTeamEnabled: boolean;
+  setAgentTeamEnabled: (enabled: boolean) => void;
+
   // Alert related props
   actionAlert: ActionAlert | undefined;
   clearAlert: () => void;
@@ -89,6 +93,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       disableChatMessage,
       modelSelection,
       setModelSelection,
+      agentTeamEnabled,
+      setAgentTeamEnabled,
       onRewindToMessage,
       subchats,
     },
@@ -266,6 +272,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                           disabled={disableChatMessage !== null || maintenanceMode}
                           modelSelection={modelSelection}
                           setModelSelection={setModelSelection}
+                          agentTeamEnabled={agentTeamEnabled}
+                          setAgentTeamEnabled={setAgentTeamEnabled}
                           onStop={onStop}
                           onSend={onSend}
                           numMessages={messages?.length}

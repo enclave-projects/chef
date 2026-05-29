@@ -19,6 +19,7 @@ import { classNames } from '~/utils/classNames';
 import { ConvexConnection } from '~/components/convex/ConvexConnection';
 import { PROMPT_COOKIE_KEY, type ModelSelection } from '~/utils/constants';
 import { ModelSelector } from './ModelSelector';
+import { AgentTeamToggle } from './AgentTeamToggle';
 import { TeamSelector } from '~/components/convex/TeamSelector';
 import { ArrowRightIcon, ExclamationTriangleIcon, MagnifyingGlassIcon, StopIcon } from '@radix-ui/react-icons';
 import { SquaresPlusIcon } from '@heroicons/react/24/outline';
@@ -99,6 +100,8 @@ export const MessageInput = memo(function MessageInput({
   disabled,
   modelSelection,
   setModelSelection,
+  agentTeamEnabled,
+  setAgentTeamEnabled,
   numMessages,
 }: {
   chatStarted: boolean;
@@ -109,6 +112,8 @@ export const MessageInput = memo(function MessageInput({
   disabled: boolean;
   modelSelection: ModelSelection;
   setModelSelection: (modelSelection: ModelSelection) => void;
+  agentTeamEnabled: boolean;
+  setAgentTeamEnabled: (enabled: boolean) => void;
   numMessages: number | undefined;
 }) {
   const [isEnhancing, setIsEnhancing] = useState(false);
@@ -279,6 +284,9 @@ export const MessageInput = memo(function MessageInput({
         >
           {chefAuthState.kind === 'fullyLoggedIn' && (
             <ModelSelector modelSelection={modelSelection} setModelSelection={setModelSelection} size="sm" />
+          )}
+          {chefAuthState.kind === 'fullyLoggedIn' && (
+            <AgentTeamToggle enabled={agentTeamEnabled} setEnabled={setAgentTeamEnabled} />
           )}
           {!chatStarted && sessionId && (
             <TeamSelector

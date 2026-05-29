@@ -156,6 +156,9 @@ export const Chat = memo(
     const apiKey = useQuery(api.apiKeys.apiKeyForCurrentMember);
 
     const [modelSelection, setModelSelection] = useLocalStorage<ModelSelection>('modelSelection', 'auto');
+    // User-facing opt-in for Agent Orchestrator team mode. OR-ed with the
+    // `enable-agent-team` LaunchDarkly flag below.
+    const [agentTeamEnabled, setAgentTeamEnabled] = useLocalStorage<boolean>('agentTeamEnabled', false);
     const terminalInitializationOptions = useMemo(
       () => ({
         isReload,
@@ -372,7 +375,8 @@ export const Chat = memo(
           promptCharacterCounts: characterCounts,
           featureFlags: {
             enableResend,
-            enableAgentTeam,
+            // Enabled by either the user toggle or the LaunchDarkly flag.
+            enableAgentTeam: agentTeamEnabled || enableAgentTeam,
           },
         };
       },
@@ -645,6 +649,8 @@ export const Chat = memo(
           sendMessageInProgress={sendMessageInProgress}
           modelSelection={modelSelection}
           setModelSelection={handleModelSelectionChange}
+          agentTeamEnabled={agentTeamEnabled}
+          setAgentTeamEnabled={setAgentTeamEnabled}
           onRewindToMessage={rewindToMessage}
           subchats={subchats}
         />
